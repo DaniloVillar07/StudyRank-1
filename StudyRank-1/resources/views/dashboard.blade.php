@@ -1,178 +1,110 @@
+{{--
+    Variáveis esperadas do DashboardController@index:
+    - $user         → auth()->user() com badges carregadas
+    - $quizzes      → Quiz::where('is_active', true)->get() com user_progress
+    - $allBadges    → Badge::all()
+    - $completedCount → número de quizzes concluídos
+    - $xp_needed    → XP necessário para o próximo nível (ex: 100)
+--}}
+
+@extends('layouts.app')
+
+@section('title', 'Dashboard')
+
+@section('styles')
+<style>
+    /* ── Cards de estatística ── */
+    .stat-card {
+        border-radius: 15px;
+        padding: 20px;
+        color: white;
+        height: 140px;
+        position: relative;
+        overflow: hidden;
+        border: none;
+    }
+    .stat-card .icon-bg {
+        position: absolute;
+        right: 15px; top: 15px;
+        font-size: 1.5rem;
+        opacity: 0.8;
+    }
+    .stat-card .label  { font-size: 0.9rem; opacity: 0.9; }
+    .stat-card .value  { font-size: 2rem; font-weight: bold; margin-top: 5px; }
+    .stat-card .subtext { font-size: 0.8rem; opacity: 0.8; }
+    .bg-xp      { background: #9d31ff; }
+    .bg-streak  { background: #ff5e00; }
+    .bg-quizzes { background: #007bff; }
+    .bg-badges  { background: #00c853; }
+
+    /* ── Barra de progresso de nível ── */
+    .progress-container {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    /* ── Cards de quiz ── */
+    .card-challenge {
+        background: white;
+        border-radius: 15px;
+        border: 1px solid #eee;
+        padding: 20px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        height: 100%;
+    }
+    .card-challenge:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    /* Quiz já completado recebe borda verde */
+    .card-challenge.completed { border-color: #00c853; }
+    .xp-tag { color: #a020f0; font-weight: bold; font-size: 0.9rem; }
+    .badge-completed {
+        background: #e8f5e9;
+        color: #00c853;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 20px;
+    }
+
+    /* ── Cards de badge ── */
+    .badge-card {
+        background: white;
+        border-radius: 15px;
+        border: 1px solid #eee;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s;
+    }
+    .badge-card.locked { opacity: 0.4; filter: grayscale(100%); }
+    .badge-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .badge-card h6 { font-size: 0.95rem; margin-bottom: 5px; }
+    .badge-card p  { font-size: 0.8rem; color: #888; margin-bottom: 0; }
+</style>
+@endsection
+
+@section('content')
 @php
-    // Cálculo de progresso para a barra
-    $progress_percent = ($user->xp_total / $xp_needed) * 100;
+    
+    $xp_atual       = $user->xp_total % 100; 
+    $progress_pct   = min(($xp_atual / $xp_needed) * 100, 100);
 @endphp
 
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - StudyRank</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --purple-main: #a020f0;
-            --blue-main: #0d6efd;
-            --bg-light: #f8f9fa;
-        }
-
-        body {
-            background-color: var(--bg-light);
-            font-family: 'Inter', sans-serif;
-            color: #333;
-        }
-
-        /* Navbar Custom */
-        .navbar {
-            background: white;
-            border-bottom: 1px solid #eee;
-            padding: 0.5rem 2rem;
-        }
-        .nav-link {
-            font-weight: 500;
-            color: #666;
-            padding: 0.5rem 1.5rem !important;
-            border-radius: 10px;
-        }
-        .nav-link.active {
-            background-color: var(--purple-main);
-            color: white !important;
-        }
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.85rem;
-        }
-
-        /* Stats Cards */
-        .stat-card {
-            border-radius: 15px;
-            padding: 20px;
-            color: white;
-            height: 140px;
-            position: relative;
-            overflow: hidden;
-            border: none;
-        }
-        .stat-card .icon-bg {
-            position: absolute;
-            right: 15px;
-            top: 15px;
-            font-size: 1.5rem;
-            opacity: 0.8;
-        }
-        .stat-card .label { font-size: 0.9rem; opacity: 0.9; }
-        .stat-card .value { font-size: 2rem; font-weight: bold; margin-top: 5px; }
-        .stat-card .subtext { font-size: 0.8rem; opacity: 0.8; }
-
-        .bg-xp { background: #9d31ff; }
-        .bg-streak { background: #ff5e00; }
-        .bg-quizzes { background: #007bff; }
-        .bg-badges { background: #00c853; }
-
-        /* Progress Bar */
-        .progress-container {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .progress { height: 12px; border-radius: 10px; background-color: #e9ecef; }
-        .progress-bar { background: var(--purple-main); transition: width 0.5s; }
-
-        /* Challenge Cards */
-        .card-challenge {
-            background: white;
-            border-radius: 15px;
-            border: 1px solid #eee;
-            padding: 20px;
-            transition: transform 0.2s;
-            height: 100%;
-        }
-        .card-challenge:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        .btn-start {
-            background: var(--purple-main);
-            color: white;
-            border-radius: 10px;
-            border: none;
-            padding: 8px 20px;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .xp-tag {
-            color: var(--purple-main);
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
-
-        /* Badge Cards */
-        .badge-card {
-            background: white;
-            border-radius: 15px;
-            border: 1px solid #eee;
-            padding: 20px;
-            text-align: center;
-            transition: all 0.3s;
-        }
-        .badge-card.locked { opacity: 0.4; filter: grayscale(100%); }
-        .badge-icon { font-size: 2.5rem; margin-bottom: 10px; }
-        .badge-card h6 { font-size: 0.95rem; margin-bottom: 5px; }
-        .badge-card p { font-size: 0.8rem; color: #888; margin-bottom: 0; }
-    </style>
-</head>
-<body>
-
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg mb-4">
-    <div class="container-fluid">
-        <a class="navbar-brand d-flex align-items-center" href="{{ route('dashboard') }}">
-            <span style="font-size: 24px; margin-right: 10px;">🏆</span>
-            <div>
-                <b class="d-block" style="line-height: 1;">StudyRank</b>
-                <small style="font-size: 10px; color: #888;">Aprenda e compita</small>
-            </div>
-        </a>
-        
-        <div class="collapse navbar-collapse justify-content-center">
-            <ul class="navbar-nav gap-2">
-                <li class="nav-item"><a class="nav-link active" href="{{ route('dashboard') }}"><span class="me-1">🏠</span> Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link" href="#"><span class="me-1">🏆</span> Ranking</a></li>
-                <li class="nav-item"><a class="nav-link" href="#"><span class="me-1">👤</span> Perfil</a></li>
-            </ul>
-        </div>
-
-        <div class="user-info">
-            <div class="text-end">
-                <div class="fw-bold">{{ $user->name }}</div>
-                <div class="text-muted">Nível {{ $user->level }} • {{ $user->xp_total }} XP</div>
-            </div>
-            <div style="background: #fdf2e9; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                👨‍💻
-            </div>
-            <form action="{{ route('logout') }}" method="POST" class="d-inline">
-                @csrf
-                <button type="submit" class="btn btn-link ms-2 text-muted text-decoration-none small p-0">Sair</button>
-            </form>
-        </div>
-    </div>
-</nav>
-
 <div class="container">
-    <!-- Top Stats -->
+
+    {{-- ── Cards de estatísticas ── --}}
     <div class="row g-3 mb-4">
         <div class="col-md-3">
             <div class="stat-card bg-xp">
                 <div class="icon-bg">⚡</div>
                 <div class="label">XP Total</div>
                 <div class="value">{{ $user->xp_total }}</div>
-                <div class="subtext"><span class="badge bg-white text-primary">Nível {{ $user->level }}</span></div>
+                <div class="subtext">
+                    <span class="badge bg-white text-primary">Nível {{ $user->level }}</span>
+                </div>
             </div>
         </div>
         <div class="col-md-3">
@@ -187,65 +119,87 @@
             <div class="stat-card bg-quizzes">
                 <div class="icon-bg">✅</div>
                 <div class="label">Quizzes</div>
-                <div class="value">{{ $user->quizzes()->wherePivot('completed', true)->count() }}/5</div>
-                <div class="subtext">Completos</div>
+                {{-- Usamos $completedCount calculado no controller, não query na view --}}
+                <div class="value">{{ $completedCount }}/5</div>
+                <div class="subtext">{{ round(($completedCount / 5) * 100) }}% completo</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="stat-card bg-badges">
                 <div class="icon-bg">🏅</div>
                 <div class="label">Badges</div>
-                <div class="value">{{ $user->badges()->count() }}</div>
+                <div class="value">{{ $user->badges->count() }}</div>
                 <div class="subtext">conquistadas</div>
             </div>
         </div>
     </div>
 
-    <!-- Progress Bar -->
+    {{-- ── Barra de progresso de nível ── --}}
     <div class="progress-container mb-5">
         <div class="d-flex justify-content-between mb-2">
             <span class="small fw-bold">Progresso para Nível {{ $user->level + 1 }}</span>
-            <span class="small text-muted">{{ $user->xp_total }}/{{ $xp_needed }} XP</span>
+            <span class="small text-muted">{{ $xp_atual }}/{{ $xp_needed }} XP</span>
         </div>
         <div class="progress">
-            <div class="progress-bar" style="width: {{ $progress_percent }}%"></div>
+            <div class="progress-bar" style="width: {{ $progress_pct }}%"></div>
         </div>
     </div>
 
-    <!-- Desafios Disponíveis -->
-    <h4 class="mb-4">Desafios Disponíveis</h4>
+    {{-- ── Desafios disponíveis ── --}}
+    <h4 class="mb-4 fw-bold">Desafios Disponíveis</h4>
     <div class="row g-4 mb-5">
         @foreach($quizzes as $quiz)
+        @php
+            {{-- user_progress foi injetado pelo QuizController@index -- }}
+            $done = $quiz->user_progress?->completed === true;
+        @endphp
         <div class="col-md-4">
-            <div class="card-challenge">
+            <div class="card-challenge {{ $done ? 'completed' : '' }}">
                 <div class="d-flex justify-content-between align-items-start mb-3">
-                    <span style="font-size: 1.5rem;">{{ $quiz->icon ?? '📝' }}</span>
-                    <span class="xp-tag">+{{ $quiz->xp_reward }} XP</span>
+                    <span style="font-size: 1.5rem;">📝</span>
+                    <div class="d-flex align-items-center gap-2">
+                        @if($done)
+                            <span class="badge-completed">✓ Concluído</span>
+                        @endif
+                        <span class="xp-tag">+{{ $quiz->xp_reward }} XP</span>
+                    </div>
                 </div>
                 <h6 class="fw-bold">{{ $quiz->title }}</h6>
-                <p class="text-muted small">{{ Str::limit($quiz->description, 60) }}</p>
-                <a href="#" class="btn-start w-100 text-center">Começar Agora</a>
+                <p class="text-muted small">{{ Str::limit($quiz->description, 70) }}</p>
+
+                {{--
+                    route('quiz.show', $quiz->id) → gera /quiz/1, /quiz/2, etc.
+                    Se já concluiu, o botão muda para "Refazer".
+                --}}
+                <a href="{{ route('quiz.show', $quiz->id) }}"
+                   class="btn-purple w-100 text-center">
+                    {{ $done ? 'Refazer' : 'Começar Agora' }}
+                </a>
             </div>
         </div>
         @endforeach
     </div>
 
-    <!-- Badges -->
-    <h4 class="mb-4">Suas Conquistas</h4>
+    {{-- ── Badges / Conquistas ── --}}
+    <h4 class="mb-4 fw-bold">Suas Conquistas</h4>
     <div class="row g-3 mb-5">
         @foreach($allBadges as $badge)
-        @php $isOwned = $user->badges->contains($badge->id); @endphp
+        @php
+            {{-- $user->badges foi carregado via eager loading no controller -- }}
+            $isOwned = $user->badges->contains($badge->id);
+        @endphp
         <div class="col-md">
             <div class="badge-card {{ $isOwned ? '' : 'locked' }}">
                 <div class="badge-icon">{{ $badge->icon }}</div>
                 <h6>{{ $badge->name }}</h6>
                 <p>{{ $badge->description }}</p>
+                @if($isOwned)
+                    <small class="text-success fw-bold">✓ Conquistada</small>
+                @endif
             </div>
         </div>
         @endforeach
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+@endsection

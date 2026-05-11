@@ -1,213 +1,234 @@
-<?php
+{{--
+    Variáveis esperadas do ProfileController@index:
+    - $user         → auth()->user() com badges e quizProgress carregados
+    - $allBadges    → Badge::all()
+    - $xp_needed    → XP para o próximo nível
+    - $rankPosition → posição do usuário no ranking semanal (ou 'Não ranqueado')
+--}}
 
-//?>
-<!DOCTYPE html>
-<html lang="pt-pt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfil - StudyRank</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --purple-main: #a020f0;
-            --purple-gradient: linear-gradient(135deg, #a020f0, #6f42c1);
-            --bg-light: #f8f9fa;
-        }
+@extends('layouts.app')
 
-        body {
-            background-color: var(--bg-light);
-            font-family: 'Inter', sans-serif;
-            color: #333;
-        }
+@section('title', 'Perfil')
 
-        /* Navbar */
-        .navbar {
-            background: white;
-            border-bottom: 1px solid #eee;
-            padding: 0.5rem 2rem;
-        }
-        .nav-link {
-            font-weight: 500;
-            color: #666;
-            padding: 0.5rem 1.2rem !important;
-        }
-        .nav-link.active {
-            background-color: var(--purple-main);
-            color: white !important;
-            border-radius: 10px;
-        }
+@section('styles')
+<style>
+    /* ── Cabeçalho do perfil ── */
+    .profile-header {
+        background: linear-gradient(135deg, #a020f0, #6f42c1);
+        border-radius: 20px;
+        padding: 35px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 30px;
+    }
+    .avatar-large {
+        width: 90px; height: 90px;
+        background: #fdf2e9;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        border: 4px solid rgba(255,255,255,0.5);
+    }
 
-        /* Profile Card */
-        .profile-header-card {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            margin-bottom: 30px;
-            position: relative;
-            overflow: hidden;
-        }
-        .profile-header-card::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 100px;
-            background: var(--purple-gradient);
-            z-index: 0;
-        }
-        .avatar-large {
-            width: 120px;
-            height: 120px;
-            background: #fdf2e9;
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3.5rem;
-            margin: 0 auto 20px;
-            position: relative;
-            z-index: 1;
-            border: 5px solid white;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        .profile-info { position: relative; z-index: 1; }
-        .level-badge {
-            background: var(--purple-main);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            display: inline-block;
-            margin-bottom: 10px;
-        }
+    /* ── Cards de estatística do perfil ── */
+    .stat-box {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid #eee;
+        height: 100%;
+        transition: transform 0.2s;
+    }
+    .stat-box:hover { transform: translateY(-4px); }
+    .stat-val {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #a020f0;
+        display: block;
+        margin-bottom: 4px;
+    }
+    .stat-label {
+        font-size: 0.78rem;
+        color: #888;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
 
-        /* Stats Grid */
-        .stat-box {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            border: 1px solid #eee;
-            transition: transform 0.2s;
-        }
-        .stat-box:hover { transform: translateY(-5px); }
-        .stat-val { font-size: 1.5rem; font-weight: 700; color: var(--purple-main); display: block; }
-        .stat-label { font-size: 0.8rem; color: #888; font-weight: 600; text-transform: uppercase; }
+    /* ── Barra de progresso ── */
+    .progress-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        border: 1px solid #eee;
+        margin-bottom: 30px;
+    }
 
-        /* Badges Section */
-        .badge-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .badge-item {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            border: 1px solid #eee;
-            transition: all 0.3s;
-        }
-        .badge-item.locked { opacity: 0.5; filter: grayscale(1); }
-        .badge-icon { font-size: 2rem; margin-bottom: 10px; display: block; }
-        .badge-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 5px; }
-        .badge-desc { font-size: 0.75rem; color: #999; line-height: 1.2; }
+    /* ── Grid de badges ── */
+    .badge-item {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid #eee;
+        transition: all 0.3s;
+        height: 100%;
+    }
+    .badge-item.locked { opacity: 0.45; filter: grayscale(1); }
+    .badge-item:not(.locked) { border-color: #a020f0; }
+    .badge-item-icon { font-size: 2.2rem; margin-bottom: 8px; display: block; }
+    .badge-item-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+    .badge-item-desc { font-size: 0.75rem; color: #999; line-height: 1.3; }
 
-        .progress { height: 10px; border-radius: 10px; background: #eee; }
-        .progress-bar { background: var(--purple-main); }
-    </style>
-</head>
-<body>
+    /* ── Histórico de quizzes ── */
+    .quiz-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid #f5f5f5;
+    }
+    .quiz-row:last-child { border-bottom: none; }
+    .score-pill {
+        background: #f3e8ff;
+        color: #a020f0;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 20px;
+    }
+</style>
+@endsection
 
-<nav class="navbar navbar-expand-lg mb-4">
-    <div class="container-fluid">
-        <a class="navbar-brand d-flex align-items-center" href="dashboard.php">
-            <span style="font-size: 24px; margin-right: 10px;">🏆</span>
-            <div>
-                <b class="d-block" style="line-height: 1;">StudyRank</b>
-                <small style="font-size: 10px; color: #888;">Aprende e compita</small>
-            </div>
-        </a>
-        <div class="collapse navbar-collapse justify-content-center">
-            <ul class="navbar-nav gap-2">
-                <li class="nav-item"><a class="nav-link" href="dashboard.php">🏠 Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link" href="ranking.php">🏆 Ranking</a></li>
-                <li class="nav-item"><a class="nav-link active" href="perfil.php">👤 Perfil</a></li>
-            </ul>
-        </div>
-        <div class="d-flex align-items-center gap-3">
-            <a href="index.php" class="btn btn-sm btn-outline-danger">Sair</a>
-        </div>
-    </div>
-</nav>
+@section('content')
+@php
+    $xp_atual     = $user->xp_total % 100;
+    $progress_pct = min(($xp_atual / $xp_needed) * 100, 100);
+    $quizzesDone  = $user->quizProgress->where('completed', true)->count();
+@endphp
 
-<div class="container">
-    <div class="row">
-        <!-- Coluna da Esquerda: Info Principal -->
+<div class="container pb-5">
+    <div class="row g-4">
+
+        {{-- ── Coluna esquerda: Info do usuário ── --}}
         <div class="col-lg-4">
-            <div class="profile-header-card">
-                <div class="avatar-large">👨‍💻</div>
-                <div class="profile-info">
-                    <span class="level-badge">Nível <?php echo $user_level; ?></span>
-                    <h3 class="fw-bold mb-1"><?php echo htmlspecialchars($user_name); ?></h3>
-                    <p class="text-muted small mb-4"><?php echo htmlspecialchars($user_email); ?></p>
-                    
-                    <div class="text-start mb-2 d-flex justify-content-between">
-                        <small class="fw-bold">XP Atual</small>
-                        <small class="text-muted"><?php echo $user_xp; ?> / <?php echo $xp_needed; ?> XP</small>
+
+            {{-- Cabeçalho roxo com avatar --}}
+            <div class="profile-header">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="avatar-large">👨‍💻</div>
+                    <div>
+                        <div class="fw-bold fs-5">{{ $user->nickname }}</div>
+                        <div style="opacity: 0.8; font-size: 0.85rem;">{{ $user->email }}</div>
                     </div>
-                    <div class="progress mb-4">
-                        <div class="progress-bar" style="width: <?php echo $progress_percent; ?>%"></div>
+                </div>
+                <div class="d-flex gap-2">
+                    <span class="badge bg-white text-purple fw-bold" style="color: #a020f0;">
+                        Nível {{ $user->level }}
+                    </span>
+                    <span class="badge bg-white text-muted fw-bold">
+                        {{ $user->xp_total }} XP
+                    </span>
+                </div>
+            </div>
+
+            {{-- Barra de progresso de nível --}}
+            <div class="progress-card">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="small fw-bold">Progresso → Nível {{ $user->level + 1 }}</span>
+                    <span class="small text-muted">{{ $xp_atual }}/{{ $xp_needed }} XP</span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar" style="width: {{ $progress_pct }}%"></div>
+                </div>
+            </div>
+
+            {{-- Estatísticas rápidas --}}
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="stat-box">
+                        <span class="stat-val">{{ $user->current_streak }} 🔥</span>
+                        <span class="stat-label">Streak</span>
                     </div>
-                    
-                    <button class="btn btn-primary w-100 border-0 py-2" style="background: var(--purple-main); border-radius: 12px;">Editar Perfil</button>
+                </div>
+                <div class="col-6">
+                    <div class="stat-box">
+                        <span class="stat-val">{{ $quizzesDone }} ✅</span>
+                        <span class="stat-label">Quizzes</span>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-box">
+                        <span class="stat-val">{{ $user->badges->count() }} 🏅</span>
+                        <span class="stat-label">Badges</span>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-box">
+                        {{-- $rankPosition vem do ProfileController --}}
+                        <span class="stat-val" style="font-size: 1.1rem;">
+                            {{ is_numeric($rankPosition) ? '#'.$rankPosition : $rankPosition }}
+                        </span>
+                        <span class="stat-label">Ranking</span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Coluna da Direita: Stats e Badges -->
+        {{-- ── Coluna direita: Badges + Histórico ── --}}
         <div class="col-lg-8">
-            <h5 class="fw-bold mb-3">Estatísticas Gerais</h5>
+
+            {{-- Coleção de Badges --}}
+            <h5 class="fw-bold mb-3">Coleção de Badges</h5>
             <div class="row g-3 mb-5">
+                @foreach($allBadges as $badge)
+                @php $isOwned = $user->badges->contains($badge->id); @endphp
                 <div class="col-md-4">
-                    <div class="stat-box">
-                        <span class="stat-val"><?php echo $user_streak; ?> 🔥</span>
-                        <span class="stat-label">Dias de Streak</span>
+                    <div class="badge-item {{ $isOwned ? '' : 'locked' }}">
+                        <span class="badge-item-icon">{{ $badge->icon }}</span>
+                        <div class="badge-item-name">{{ $badge->name }}</div>
+                        <div class="badge-item-desc">{{ $badge->description }}</div>
+                        @if($isOwned)
+                            <div class="mt-2">
+                                <small class="text-success fw-bold">✓ Conquistada</small>
+                            </div>
+                        @endif
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="stat-box">
-                        <span class="stat-val"><?php echo $quizzes_done; ?> ✅</span>
-                        <span class="stat-label">Quizzes Feitos</span>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-box">
-                        <span class="stat-val"><?php echo $rank_position; ?> 🏆</span>
-                        <span class="stat-label">Posição Global</span>
-                    </div>
-                </div>
+                @endforeach
             </div>
 
-            <h5 class="fw-bold mb-3">Emblemas e Conquistas</h5>
-            <div class="badge-grid">
-                <?php foreach ($badges as $badge): ?>
-                    <div class="badge-item <?php echo ($badge['status'] == 'bloqueado') ? 'locked' : ''; ?>">
-                        <span class="badge-icon"><?php echo $badge['icon']; ?></span>
-                        <div class="badge-name"><?php echo $badge['name']; ?></div>
-                        <div class="badge-desc"><?php echo $badge['desc']; ?></div>
+            {{-- Histórico de quizzes realizados --}}
+            <h5 class="fw-bold mb-3">Atividade Recente</h5>
+            <div class="bg-white rounded-4 p-4 border" style="border-color: #eee !important;">
+                @forelse($user->quizProgress->where('completed', true) as $progress)
+                <div class="quiz-row">
+                    <div>
+                        <div class="fw-semibold small">{{ $progress->quiz->title }}</div>
+                        <div class="text-muted" style="font-size: 0.78rem;">
+                            {{-- finished_at é um Carbon graças ao cast no model --}}
+                            {{ $progress->finished_at?->format('d/m/Y \à\s H:i') }}
+                        </div>
                     </div>
-                <?php endforeach; ?>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="score-pill">
+                            {{ $progress->score }}/{{ count($progress->quiz->questions) }} acertos
+                        </span>
+                        <span class="fw-bold text-success small">+{{ $progress->xp_earned }} XP</span>
+                    </div>
+                </div>
+                @empty
+                <p class="text-muted text-center mb-0 py-3">
+                    Nenhum quiz concluído ainda. <a href="{{ route('dashboard') }}">Comece agora!</a>
+                </p>
+                @endforelse
             </div>
+
         </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+@endsection

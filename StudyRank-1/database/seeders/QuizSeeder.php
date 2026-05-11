@@ -7,83 +7,180 @@ use Illuminate\Database\Seeder;
 
 class QuizSeeder extends Seeder
 {
+    /**
+     * Cria os 5 quizzes fixos da plataforma.
+     *
+     * Cada questão segue o formato exato esperado pelo QuizController:
+     *   { "text": "...", "options": ["A","B","C","D"], "correct": 0 }
+     *
+     * "correct" é o índice (0-based) da opção correta.
+     */
     public function run(): void
     {
+        Quiz::truncate();
+
         $quizzes = [
+
+            // ── 1. Fundamentos de JavaScript ──────────────────────────
             [
-                'title' => 'PHP Moderno',
-                'description' => 'Domine tipos, arrow functions e novidades do PHP 8.x.',
-                'difficulty' => 'easy',
-                'xp_reward' => 50,
-                'questions' => [
+                'title'       => 'Fundamentos de JavaScript',
+                'description' => 'Teste seus conhecimentos básicos em JavaScript.',
+                'difficulty'  => 'easy',
+                'xp_reward'   => 20,
+                'is_active'   => true,
+                'questions'   => [
                     [
-                        'q' => 'Qual símbolo é usado para o Nullsafe Operator no PHP?',
-                        'options' => ['??', '?:', '?->', '!!'],
-                        'answer' => 2
+                        'text'    => 'Qual palavra-chave declara uma variável imutável em JavaScript?',
+                        'options' => ['var', 'let', 'const', 'static'],
+                        'correct' => 2,
                     ],
                     [
-                        'q' => 'Arrow functions no PHP têm acesso automático ao escopo pai?',
-                        'options' => ['Sim', 'Não', 'Apenas se usar global', 'Apenas variáveis estáticas'],
-                        'answer' => 0
-                    ]
+                        'text'    => 'Qual operador verifica igualdade de valor E tipo?',
+                        'options' => ['==', '===', '!=', '=>'],
+                        'correct' => 1,
+                    ],
+                    [
+                        'text'    => 'O que Array.map() retorna?',
+                        'options' => [
+                            'O mesmo array modificado',
+                            'Um novo array com os resultados',
+                            'O índice dos elementos',
+                            'undefined',
+                        ],
+                        'correct' => 1,
+                    ],
                 ],
             ],
+
+            // ── 2. React Essentials ────────────────────────────────────
             [
-                'title' => 'Laravel: Rotas e Controllers',
-                'description' => 'Conceitos essenciais de fluxo de requisição.',
-                'difficulty' => 'easy',
-                'xp_reward' => 50,
-                'questions' => [
+                'title'       => 'React Essentials',
+                'description' => 'Conceitos fundamentais do React.',
+                'difficulty'  => 'medium',
+                'xp_reward'   => 20,
+                'is_active'   => true,
+                'questions'   => [
                     [
-                        'q' => 'Qual comando Artisan cria um Controller do tipo Resource?',
-                        'options' => ['make:controller --r', 'make:controller --resource', 'generate:resource', 'create:controller'],
-                        'answer' => 1
-                    ]
+                        'text'    => 'Qual hook armazena estado em componentes funcionais?',
+                        'options' => ['useEffect', 'useRef', 'useState', 'useContext'],
+                        'correct' => 2,
+                    ],
+                    [
+                        'text'    => 'O que é JSX?',
+                        'options' => [
+                            'Um banco de dados para React',
+                            'Sintaxe que mistura HTML com JavaScript',
+                            'Um framework CSS',
+                            'Um gerenciador de pacotes',
+                        ],
+                        'correct' => 1,
+                    ],
+                    [
+                        'text'    => 'Qual hook executa efeitos após a renderização?',
+                        'options' => ['useState', 'useCallback', 'useEffect', 'useMemo'],
+                        'correct' => 2,
+                    ],
                 ],
             ],
+
+            // ── 3. CSS Avançado ────────────────────────────────────────
             [
-                'title' => 'Eloquent & Banco de Dados',
-                'description' => 'Consultas avançadas e relacionamentos.',
-                'difficulty' => 'medium',
-                'xp_reward' => 100,
-                'questions' => [
+                'title'       => 'CSS Avançado',
+                'description' => 'Flexbox, Grid e animações CSS.',
+                'difficulty'  => 'medium',
+                'xp_reward'   => 20,
+                'is_active'   => true,
+                'questions'   => [
                     [
-                        'q' => 'Como evitar o problema de consulta N+1 no Eloquent?',
-                        'options' => ['Usando with()', 'Usando find()', 'Usando all()', 'Usando join()'],
-                        'answer' => 0
-                    ]
+                        'text'    => 'Qual propriedade CSS3 cria layouts em grade?',
+                        'options' => ['display: flex', 'display: grid', 'display: table', 'display: block'],
+                        'correct' => 1,
+                    ],
+                    [
+                        'text'    => 'No Flexbox, qual propriedade define a direção dos itens filhos?',
+                        'options' => ['align-items', 'justify-content', 'flex-direction', 'flex-wrap'],
+                        'correct' => 2,
+                    ],
+                    [
+                        'text'    => 'Qual propriedade cria transições suaves entre estados?',
+                        'options' => ['animation', 'transition', 'transform', '@keyframes'],
+                        'correct' => 1,
+                    ],
                 ],
             ],
+
+            // ── 4. Banco de Dados SQL ──────────────────────────────────
             [
-                'title' => 'Git para Profissionais',
-                'description' => 'Gestão de branches e resolução de conflitos.',
-                'difficulty' => 'medium',
-                'xp_reward' => 80,
-                'questions' => [
+                'title'       => 'Banco de Dados SQL',
+                'description' => 'Queries e modelagem de dados.',
+                'difficulty'  => 'hard',
+                'xp_reward'   => 20,
+                'is_active'   => true,
+                'questions'   => [
                     [
-                        'q' => 'Qual comando remove um arquivo do index do Git sem apagá-lo do disco?',
-                        'options' => ['git rm', 'git delete --cached', 'git rm --cached', 'git reset hard'],
-                        'answer' => 2
-                    ]
+                        'text'    => 'Qual comando SQL busca registros em uma tabela?',
+                        'options' => ['GET', 'FETCH', 'SELECT', 'FIND'],
+                        'correct' => 2,
+                    ],
+                    [
+                        'text'    => 'Qual cláusula filtra registros APÓS um GROUP BY?',
+                        'options' => ['WHERE', 'HAVING', 'FILTER', 'LIMIT'],
+                        'correct' => 1,
+                    ],
+                    [
+                        'text'    => 'O que é uma FOREIGN KEY?',
+                        'options' => [
+                            'Identifica unicamente cada linha',
+                            'Um índice automático',
+                            'Referencia a chave primária de outra tabela',
+                            'Impede valores duplicados',
+                        ],
+                        'correct' => 2,
+                    ],
                 ],
             ],
+
+            // ── 5. Git & Versionamento ─────────────────────────────────
             [
-                'title' => 'Lógica de RPG & Sistemas',
-                'description' => 'Desafios de lógica baseados em sistemas de torneios.',
-                'difficulty' => 'hard',
-                'xp_reward' => 150,
-                'questions' => [
+                'title'       => 'Git & Versionamento',
+                'description' => 'Controle de versão e colaboração.',
+                'difficulty'  => 'easy',
+                'xp_reward'   => 20,
+                'is_active'   => true,
+                'questions'   => [
                     [
-                        'q' => 'Em um torneio de "Aventureiros em ReinFord", qual a melhor forma de garantir integridade referencial entre times e grupos?',
-                        'options' => ['Usar chaves estrangeiras (FK)', 'Validar apenas no PHP', 'Usar arquivos TXT', 'Não usar chaves'],
-                        'answer' => 0
-                    ]
+                        'text'    => 'Qual comando salva alterações no repositório local?',
+                        'options' => ['git save', 'git push', 'git commit', 'git add'],
+                        'correct' => 2,
+                    ],
+                    [
+                        'text'    => 'O que "git pull" faz?',
+                        'options' => [
+                            'Envia commits para o remoto',
+                            'Busca e integra alterações do remoto para o local',
+                            'Cria uma nova branch',
+                            'Reverte o último commit',
+                        ],
+                        'correct' => 1,
+                    ],
+                    [
+                        'text'    => 'Qual comando cria e já muda para uma nova branch?',
+                        'options' => [
+                            'git branch nova',
+                            'git checkout nova',
+                            'git checkout -b nova',
+                            'git merge nova',
+                        ],
+                        'correct' => 2,
+                    ],
                 ],
             ],
         ];
 
-        foreach ($quizzes as $quiz) {
-            Quiz::create($quiz);
+        foreach ($quizzes as $data) {
+            Quiz::create($data);
         }
+
+        $this->command->info('✓ 5 quizzes criados com sucesso.');
     }
 }
